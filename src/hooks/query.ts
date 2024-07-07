@@ -14,7 +14,9 @@ import { ApplyDefaults } from '@/lib/utils';
 import { seriesService } from '@/services/SeriesService';
 import { hashtagService } from '@/services/HashtagService';
 import { questionService } from '@/services/QuestionService';
-import { number } from 'zod';
+import { adminService } from '@/services/AdminService';
+import { recommendService } from '@/services/RecommendService';
+import { aiChatService } from '@/services/AIChatService';
 
 // ---------------------------FETCH HOOKS---------------------------
 
@@ -269,20 +271,22 @@ export const useUserPostsData = (userID: string) => {
  * - `isFetchingPost` is a boolean that indicates whether the query is currently fetching.
  */
 export const usePostData = (postID: string) => {
-  const { data, isPending, isError, isFetching } = useQuery({
+  const { data, isPending, isError, isFetching, refetch } = useQuery({
     queryKey: ['post', postID],
     queryFn: async () => {
       const { data } = await postService.getPostByID(postID);
       return data.metadata;
     },
-    staleTime: Infinity
+    staleTime: Infinity,
+    enabled: !!postID
   });
 
   return {
     isLoadingPost: isPending,
     isErrorPost: isError,
     post: data!,
-    isFetchingPost: isFetching
+    isFetchingPost: isFetching,
+    refetchPost: refetch
   };
 };
 
@@ -774,35 +778,6 @@ export const useGetCommunitiesByUserID = (userID: string) => {
     isErrorCommunities: isError,
     communities: data!,
     isFetchingCommunities: isFetching
-  };
-};
-
-export const useGetNoti = (userID: number) => {
-  const { data, isPending, isError, isFetching } = useInfiniteQuery({
-    queryKey: ['noti', userID],
-    queryFn: async ({ pageParam }) => {
-      const { data } = await notiService.getNoti(userID, pageParam);
-      return data.metadata;
-    },
-    initialPageParam: 1,
-    getNextPageParam: (lastPage, _, lastPageParam) => {
-      if (lastPage.length < 5) {
-        return undefined;
-      }
-      return lastPageParam + 1;
-    },
-    select: (data) => {
-      return data.pages.flat();
-    },
-    enabled: !!userID,
-    staleTime: Infinity
-  });
-
-  return {
-    isLoadingNoti: isPending,
-    isErrorNoti: isError,
-    noti: data!,
-    isFetchingNoti: isFetching
   };
 };
 
@@ -1395,4 +1370,318 @@ export const useGetAllListQuestions = () => {
     allListQuestions: data!,
     isFetchingAllListQuestions: isFetching
   };
-}
+};
+
+export const useGetAllNotifications = () => {
+  const { data, isPending, isError, isFetching, refetch, hasNextPage, fetchNextPage, isFetchingNextPage } =
+    useInfiniteQuery({
+      queryKey: ['allNotifications'],
+      queryFn: async ({ pageParam }) => {
+        const { data } = await notiService.getAllNotifications(pageParam);
+        return data.metadata;
+      },
+      initialPageParam: 1,
+      getNextPageParam: (lastPage, _, lastPageParam) => {
+        if (lastPage.length < 10) {
+          return undefined;
+        }
+        return lastPageParam + 1;
+      },
+      select: (data) => {
+        return data.pages.flat();
+      },
+      staleTime: Infinity
+    });
+
+  return {
+    isLoadingAllNotifications: isPending,
+    isErrorAllNotifications: isError,
+    allNotifications: data!,
+    isFetchingAllNotifications: isFetching,
+    refetchAllNotifications: refetch,
+    hasNextAllNotifications: hasNextPage,
+    fetchNextAllNotifications: fetchNextPage,
+    isFetchingNextAllNotifications: isFetchingNextPage
+  };
+};
+
+export const useGetUnRedNotiNumber = () => {
+  const { data, isPending, isError, isFetching } = useQuery({
+    queryKey: ['unRedNotiNumber'],
+    queryFn: async () => {
+      const { data } = await notiService.getUnRedNotiNumber();
+      return data.metadata;
+    },
+    staleTime: 60000 * 3
+  });
+
+  return {
+    isLoadingUnRedNotiNumber: isPending,
+    isErrorUnRedNotiNumber: isError,
+    unRedNotiNumber: data!,
+    isFetchingUnRedNotiNumber: isFetching
+  };
+};
+
+// ------------------------------Admin hooks--------------------------------
+
+export const useGetAllUsersAdmin = (page: number, pageSize?: number) => {
+  const { data, isPending, isError, isFetching } = useQuery({
+    queryKey: ['allUsersAdmin', page, pageSize ?? 10],
+    queryFn: async () => {
+      const { data } = await adminService.getAllUsers(page + 1, pageSize);
+      return data.metadata;
+    },
+    staleTime: Infinity
+  });
+
+  return {
+    isLoadingAllUsers: isPending,
+    isErrorAllUsers: isError,
+    allUsers: data!,
+    isFetchingAllUsers: isFetching
+  };
+};
+
+export const useGetNumberOfUsersAdmin = () => {
+  const { data, isPending, isError, isFetching } = useQuery({
+    queryKey: ['numberOfUsersAdmin'],
+    queryFn: async () => {
+      const { data } = await adminService.getNumberOfUsers();
+      return data.metadata;
+    },
+    staleTime: Infinity
+  });
+
+  return {
+    isLoadingNumberOfUsers: isPending,
+    isErrorNumberOfUsers: isError,
+    numberOfUsers: data!,
+    isFetchingNumberOfUsers: isFetching
+  };
+};
+
+export const useGetAllPostsAdmin = (page: number, pageSize?: number) => {
+  const { data, isPending, isError, isFetching } = useQuery({
+    queryKey: ['allPostsAdmin', page, pageSize ?? 10],
+    queryFn: async () => {
+      const { data } = await adminService.getAllPosts(page + 1, pageSize);
+      return data.metadata;
+    },
+    staleTime: Infinity
+  });
+
+  return {
+    isLoadingAllPosts: isPending,
+    isErrorAllPosts: isError,
+    allPosts: data!,
+    isFetchingAllPosts: isFetching
+  };
+};
+
+export const useGetNumberOfPostsAdmin = () => {
+  const { data, isPending, isError, isFetching } = useQuery({
+    queryKey: ['numberOfPostsAdmin'],
+    queryFn: async () => {
+      const { data } = await adminService.getNumberOfPosts();
+      return data.metadata;
+    },
+    staleTime: Infinity
+  });
+
+  return {
+    isLoadingNumberOfPosts: isPending,
+    isErrorNumberOfPosts: isError,
+    numberOfPosts: data!,
+    isFetchingNumberOfPosts: isFetching
+  };
+};
+
+export const useGetNumberOfSeriesAdmin = () => {
+  const { data, isPending, isError, isFetching } = useQuery({
+    queryKey: ['numberOfSeriesAdmin'],
+    queryFn: async () => {
+      const { data } = await adminService.getNumberOfSeries();
+      return data.metadata;
+    },
+    staleTime: Infinity
+  });
+
+  return {
+    isLoadingNumberOfSeries: isPending,
+    isErrorNumberOfSeries: isError,
+    numberOfSeries: data!,
+    isFetchingNumberOfSeries: isFetching
+  };
+};
+
+export const useGetAllSeriesAdmin = (page: number, pageSize?: number) => {
+  const { data, isPending, isError, isFetching } = useQuery({
+    queryKey: ['allSeriesAdmin', page, pageSize ?? 10],
+    queryFn: async () => {
+      const { data } = await adminService.getAllSeries(page + 1, pageSize);
+      return data.metadata;
+    },
+    staleTime: Infinity
+  });
+
+  return {
+    isLoadingAllSeries: isPending,
+    isErrorAllSeries: isError,
+    allSeries: data!,
+    isFetchingAllSeries: isFetching
+  };
+};
+
+export const useGetNumberOfCommunitiesAdmin = () => {
+  const { data, isPending, isError, isFetching } = useQuery({
+    queryKey: ['numberOfCommunitiesAdmin'],
+    queryFn: async () => {
+      const { data } = await adminService.getNumberOfCommunities();
+      return data.metadata;
+    },
+    staleTime: Infinity
+  });
+
+  return {
+    isLoadingNumberOfCommunities: isPending,
+    isErrorNumberOfCommunities: isError,
+    numberOfCommunities: data!,
+    isFetchingNumberOfCommunities: isFetching
+  };
+};
+
+export const useGetAllCommunitiesAdmin = (page: number, pageSize?: number) => {
+  const { data, isPending, isError, isFetching } = useQuery({
+    queryKey: ['allCommunitiesAdmin', page, pageSize ?? 10],
+    queryFn: async () => {
+      const { data } = await adminService.getAllCommunities(page + 1, pageSize);
+      return data.metadata;
+    },
+    staleTime: Infinity
+  });
+
+  return {
+    isLoadingAllCommunities: isPending,
+    isErrorAllCommunities: isError,
+    allCommunities: data!,
+    isFetchingAllCommunities: isFetching
+  };
+};
+
+export const useGetNumberOfQuestionsAdmin = () => {
+  const { data, isPending, isError, isFetching } = useQuery({
+    queryKey: ['numberOfQuestionsAdmin'],
+    queryFn: async () => {
+      const { data } = await adminService.getNumberOfQuestions();
+      return data.metadata;
+    },
+    staleTime: Infinity
+  });
+
+  return {
+    isLoadingNumberOfQuestions: isPending,
+    isErrorNumberOfQuestions: isError,
+    numberOfQuestions: data!,
+    isFetchingNumberOfQuestions: isFetching
+  };
+};
+
+export const useGetAllQuestionsAdmin = (page: number, pageSize?: number) => {
+  const { data, isPending, isError, isFetching } = useQuery({
+    queryKey: ['allQuestionsAdmin', page, pageSize ?? 10],
+    queryFn: async () => {
+      const { data } = await adminService.getAllQuestions(page + 1, pageSize);
+      return data.metadata;
+    },
+    staleTime: Infinity
+  });
+
+  return {
+    isLoadingAllQuestions: isPending,
+    isErrorAllQuestions: isError,
+    allQuestions: data!,
+    isFetchingAllQuestions: isFetching
+  };
+};
+
+export const useGetAllParentCommentsAdmin = (postID: string, pageSize?: number) => {
+  const { data, isPending, isError, isFetching, hasNextPage, fetchNextPage, isFetchingNextPage } =
+    useInfiniteQuery({
+      queryKey: ['allParentCommentsAdmin', postID],
+      queryFn: async ({ pageParam }) => {
+        const { data } = await adminService.getAllParentComments(postID, pageParam, pageSize);
+        return data.metadata;
+      },
+      initialPageParam: 1,
+      getNextPageParam: (lastPage, _, lastPageParam) => {
+        if (lastPage.length < (pageSize ?? 20)) {
+          return undefined;
+        }
+        return lastPageParam + 1;
+      },
+      select: (data) => {
+        return data.pages.flat();
+      },
+      staleTime: Infinity
+    });
+
+  return {
+    isLoadingAllParentComments: isPending,
+    isErrorAllParentComments: isError,
+    allParentComments: data!,
+    isFetchingAllParentComments: isFetching,
+    hasNextParentComments: hasNextPage,
+    fetchNextParentComments: fetchNextPage,
+    isFetchingNextParentComments: isFetchingNextPage
+  };
+};
+
+export const useGetAllChildCommentsAdmin = (parentCommentID: string, pageSize?: number) => {
+  const { data, isPending, isError, isFetching, hasNextPage, fetchNextPage, isFetchingNextPage } =
+    useInfiniteQuery({
+      queryKey: ['allChildCommentsAdmin', parentCommentID],
+      queryFn: async ({ pageParam }) => {
+        const { data } = await adminService.getAllChildComments(parentCommentID, pageParam, pageSize);
+        return data.metadata;
+      },
+      initialPageParam: 1,
+      getNextPageParam: (lastPage, _, lastPageParam) => {
+        if (lastPage.length < (pageSize ?? 20)) {
+          return undefined;
+        }
+        return lastPageParam + 1;
+      },
+      select: (data) => {
+        return data.pages.flat();
+      },
+      staleTime: Infinity
+    });
+
+  return {
+    isLoadingAllChildComments: isPending,
+    isErrorAllChildComments: isError,
+    allChildComments: data!,
+    isFetchingAllChildComments: isFetching,
+    hasNextChildComments: hasNextPage,
+    fetchNextChildComments: fetchNextPage,
+    isFetchingNextChildComments: isFetchingNextPage
+  };
+};
+export const useGetRecommendUsers = (userID: string) => {
+  const { data, isPending, isError, isFetching } = useQuery({
+    queryKey: ['recommendUsers', userID],
+    queryFn: async () => {
+      const { data } = await recommendService.getRecommendUsers(userID);
+      return data.metadata;
+    },
+    staleTime: Infinity
+  });
+
+  return {
+    isLoadingRecommendUsers: isPending,
+    isErrorRecommendUsers: isError,
+    recommendUsers: data!,
+    isFetchingRecommendUsers: isFetching
+  };
+};

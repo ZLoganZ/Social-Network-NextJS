@@ -1,4 +1,5 @@
 export const DOMAIN_NAME = process.env.NEXT_PUBLIC_API_BASE;
+export const RECOMMEND_DOMAIN = process.env.NEXT_PUBLIC_API_RECOMMENDATION;
 
 export const USER_LOGIN = 'user_login';
 export const ID_USER = '_id';
@@ -62,5 +63,9 @@ export const Socket = {
   END_VIDEO_CALL: 'end_video',
   END_VOICE_CALL: 'end_audio',
   SEND_END_VIDEO_CALL: 'send_end_video',
-  SEND_END_VOICE_CALL: 'send_end_audio'
+  SEND_END_VOICE_CALL: 'send_end_audio',
+
+  // =================== Notification ===================
+  NOTI_ARR: 'NOTI_ARR',
+  NOTI: 'NOTI'
 };
